@@ -1,0 +1,115 @@
+<html>
+	<head>
+		<title>Simple Case Converter</title>
+		<style>
+		.actionsBlock{
+			margin: 10px 0;
+		}
+		</style>
+	</head>
+	<body>
+		<h1>Simple Case Converter</h1>
+		<div class="inputBlock">
+			<textarea rows="10" cols="100" id="input" placeholder="Input"></textarea>
+		</div>
+		<div class="actionsBlock">
+			<select id="inputCaseSelect">
+				<option value="camelCase">camelCase</option>
+				<option value="PascalCase">PascalCase</option>
+				<option value="snake_case" selected>snake_case</option>
+				<option value="Separate Words">Separate Words</option>
+			</select>
+			to
+			<select id="outputCaseSelect">
+				<option value="camelCase">camelCase</option>
+				<option value="PascalCase" selected>PascalCase</option>
+				<option value="snake_case">snake_case</option>
+				<option value="Separate Words">Separate Words</option>
+			</select>
+			<button onclick="convertClick()">Convert</button>
+		</div>
+		<div class="outputBlock">
+			<textarea rows="10" cols="100" id="output" placeholder="Output"></textarea>
+		</div>
+	</body>
+	<script>
+		function convertClick(){
+			var input = document.getElementById("input").value;
+			var inputCase = document.getElementById("inputCaseSelect").value;
+			var outputCase = document.getElementById("outputCaseSelect").value;
+			document.getElementById("output").value = inputCase == outputCase ? input : convert(input, inputCase, outputCase);
+		}
+
+		function convert(input, inputCase, outputCase){
+			if(!input || input.length == 0)
+				return input;
+			input = formatInput(input);
+			var tokenDetector = getCaseTokenDetector(inputCase);
+			var tokenTransformer = getCaseTransform(outputCase);
+			var output = convertFirstCharacter(input[0], outputCase);
+			for(var i = 1; i<input.length; i++) {
+				if(input[i] === "\n" && i+1 < input.length) {
+					output += "\n"+convertFirstCharacter(input[i+1], outputCase);
+					i++;
+				}
+				else if(!tokenDetector(input[i], input[i-1]))
+					output += input[i];
+				else
+					output += tokenTransformer(input[i], input[i-1]);
+			}
+			output = handleDividers(output, outputCase);
+			return output;
+		}
+
+		function getCaseTokenDetector(caseName) {
+			switch(caseName){
+				case "camelCase":
+					return function(character, prevCharacter){return character === character.toUpperCase()};
+				case "PascalCase":
+					return function(character, prevCharacter){return character === character.toUpperCase()};
+				case "snake_case":
+					return function(character, prevCharacter){return prevCharacter === "_"};
+				case "Separate Words":
+					return function(character, prevCharacter){return prevCharacter === " "};
+			}
+		}
+
+		function getCaseTransform(caseName) {
+			switch(caseName){
+				case "camelCase":
+					return function(character){return character.toUpperCase()};
+				case "PascalCase":
+					return function(character){return character.toUpperCase()};
+				case "snake_case":
+					return function(character){return "_"+character.toLowerCase()};
+				case "Separate Words":
+					return function(character){return " "+character.toUpperCase()};
+			}
+		}
+
+		function handleDividers(output, outputCase) {
+			switch(outputCase){
+				case "camelCase":
+				case "PascalCase":
+					output = output.replaceAll("_", "");
+				case "snake_case":
+					return output.replaceAll(" ", "");
+				case "Separate Words":
+					return output.replaceAll("_", "").replace(/  +/g, ' ');
+			}
+		}
+
+		function convertFirstCharacter(character, outputCase) {
+			return outputCase == "camelCase" || outputCase == "snake_case" ? character.toLowerCase() : character.toUpperCase();
+		}
+
+		function formatInput(input) {
+			return input.replace(/[ ]+\n/g, '\n');
+		}
+		String.prototype.replaceAll = function(search, replacement) {
+			var target = this;
+			return target.replace(new RegExp(search, 'g'), replacement);
+		};
+
+	</script>
+</html>
