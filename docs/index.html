@@ -14,16 +14,18 @@
 		</div>
 		<div class="actionsBlock">
 			<select id="inputCaseSelect">
-				<option value="camelCase">camelCase</option>
+				<option value="camelCase" selected>camelCase</option>
 				<option value="PascalCase">PascalCase</option>
-				<option value="snake_case" selected>snake_case</option>
+				<option value="snake_case">snake_case</option>
+				<option value="kebab-case">kebab-case</option>
 				<option value="Separate Words">Separate Words</option>
 			</select>
 			to
 			<select id="outputCaseSelect">
 				<option value="camelCase">camelCase</option>
-				<option value="PascalCase" selected>PascalCase</option>
-				<option value="snake_case">snake_case</option>
+				<option value="PascalCase">PascalCase</option>
+				<option value="snake_case" selected>snake_case</option>
+				<option value="kebab-case">kebab-case</option>
 				<option value="Separate Words">Separate Words</option>
 			</select>
 			<button onclick="convertClick()">Convert</button>
@@ -33,6 +35,8 @@
 		</div>
 	</body>
 	<script>
+
+
 		function convertClick(){
 			var input = document.getElementById("input").value;
 			var inputCase = document.getElementById("inputCaseSelect").value;
@@ -43,73 +47,80 @@
 		function convert(input, inputCase, outputCase){
 			if(!input || input.length == 0)
 				return input;
-			input = formatInput(input);
-			var tokenDetector = getCaseTokenDetector(inputCase);
-			var tokenTransformer = getCaseTransform(outputCase);
-			var output = convertFirstCharacter(input[0], outputCase);
-			for(var i = 1; i<input.length; i++) {
-				if(input[i] === "\n" && i+1 < input.length) {
-					output += "\n"+convertFirstCharacter(input[i+1], outputCase);
-					i++;
+			input = input.replace(/[ ]+/g, ' ').trim();
+			var output = "";
+			var lines =  input.split("\n");
+			for(var i = 0; i < lines.length; i++) {
+				var words = inputCase === "Separate Words" ? [lines[i]] : lines[i].split(' ');
+				for(var j=0; j < words.length; j++) {
+					output += convertWord(words[j], inputCase, outputCase)+ " ";
 				}
-				else if(!tokenDetector(input[i], input[i-1]))
-					output += input[i];
-				else
-					output += tokenTransformer(input[i], input[i-1]);
+				output += "\n";
 			}
-			output = handleDividers(output, outputCase);
 			return output;
 		}
 
-		function getCaseTokenDetector(caseName) {
-			switch(caseName){
-				case "camelCase":
-					return function(character, prevCharacter){return character === character.toUpperCase()};
+		function convertWord(word, inputCase, outputCase) {
+			var wordParts = divideWordByParts(word, inputCase);
+			return connectWordParts(wordParts, outputCase);
+		}
+
+		function divideWordByParts(word, wordCase) {
+			switch(wordCase){
+				case "camelCase": 
 				case "PascalCase":
-					return function(character, prevCharacter){return character === character.toUpperCase()};
-				case "snake_case":
-					return function(character, prevCharacter){return prevCharacter === "_"};
+					var capitalizedLetters = word.split('').filter(x=> x.toUpperCase() === x).unique();
+					capitalizedLetters.forEach(x=> word = word.replaceAll(x, " "+x));
 				case "Separate Words":
-					return function(character, prevCharacter){return prevCharacter === " "};
+					return word.split(' ');
+				case "snake_case":
+					return word.split('_');
+				case "kebab-case":
+					return word.split('-');
 			}
 		}
 
-		function getCaseTransform(caseName) {
-			switch(caseName){
+		function connectWordParts(wordParts, wordCase) {
+			wordParts = wordParts.map(function(x){ return x.toLowerCase() });
+			switch(wordCase){
 				case "camelCase":
-					return function(character){return character.toUpperCase()};
+					for(var i = 1; i < wordParts.length; i++) wordParts[i] = wordParts[i].capitalizeFirstLetter();
+					return wordParts.join('');
 				case "PascalCase":
-					return function(character){return character.toUpperCase()};
-				case "snake_case":
-					return function(character){return "_"+character.toLowerCase()};
+					for(var i = 0; i < wordParts.length; i++) wordParts[i] = wordParts[i].capitalizeFirstLetter();
+					return wordParts.join('');
 				case "Separate Words":
-					return function(character){return " "+character.toUpperCase()};
+					for(var i = 0; i < wordParts.length; i++) wordParts[i] = wordParts[i].capitalizeFirstLetter();
+					return wordParts.join(' ');
+				case "snake_case":
+					return wordParts.join('_');
+				case "kebab-case":
+					return wordParts.join('-');
 			}
 		}
 
-		function handleDividers(output, outputCase) {
-			switch(outputCase){
-				case "camelCase":
-				case "PascalCase":
-					output = output.replaceAll("_", "");
-				case "snake_case":
-					return output.replaceAll(" ", "");
-				case "Separate Words":
-					return output.replaceAll("_", "").replace(/  +/g, ' ');
-			}
-		}
-
-		function convertFirstCharacter(character, outputCase) {
-			return outputCase == "camelCase" || outputCase == "snake_case" ? character.toLowerCase() : character.toUpperCase();
-		}
-
-		function formatInput(input) {
-			return input.replace(/[ ]+\n/g, '\n');
-		}
 		String.prototype.replaceAll = function(search, replacement) {
 			var target = this;
 			return target.replace(new RegExp(search, 'g'), replacement);
 		};
+		
+		String.prototype.capitalizeFirstLetter = function() {
+			return this.charAt(0).toUpperCase() + this.slice(1);
+		}
+
+		Array.prototype.unique = function()
+		{
+			var n = {},r=[];
+			for(var i = 0; i < this.length; i++) 
+			{
+				if (!n[this[i]]) 
+				{
+					n[this[i]] = true; 
+					r.push(this[i]); 
+				}
+			}
+			return r;
+		}
 
 	</script>
 </html>
